@@ -1,80 +1,71 @@
 import React, { Component } from 'react';
 import { View, StyleSheet, Text, FlatList,TouchableOpacity } from 'react-native';
-import { ListItem } from 'react-native-elements'
+import { Icon, ListItem } from 'react-native-elements'
 import firebase from 'firebase';
 import db from '../config'
 import MyHeader from '../components/MyHeader';
+import BookRequest from './BookRequestScreen';
 
-export default class BookDonate extends Component{
+export default class MyReceivedBooks extends Component{
   constructor(){
     super()
     this.state = {
-      requestedBooksList : []
+      receivedBooksList : [],
+      userId:firebase.auth().currentUser.email,
     }
   this.requestRef= null
   }
 
-  getRequestedBooksList = async ()=>{
-    this.requestRef = await db.collection("requestedBooks")
+
+  getReceivedBooksList = () => {
+    this.requestRef =  db.collection("RequestedBooks").where("userId", "==" ,this.state.userId).where("bookStatus", "==", "received")
     .onSnapshot((snapshot)=>{
-      var requestedBooksList = snapshot.docs.map(document => {return document.data()});
+      var receivedBooksList = snapshot.docs.map(document => {return document.data()});
       this.setState({
-        requestedBooksList : requestedBooksList
+        receivedBooksList : receivedBooksList
       });
     })
-    console.log(this.state.requestedBooksList)
+    console.log(this.state.receivedBooksList)
   }
 
   componentDidMount(){
-    this.getRequestedBooksList()
+    this.getReceivedBooksList()
   }
 
   componentWillUnmount(){
-    this.requestRef();
+    this.requestRef = null
   }
 
   keyExtractor = (item, index) => index.toString()
 
   renderItem = ( {item, i} ) =>{
     return (
-      <View>
-        <ListItem
+      <ListItem
         key={i}
         title={item.bookName}
-        subtitle={item.reasonToRequest}
+        subtitle={item.bookStatus}
         titleStyle={{ color: 'black', fontWeight: 'bold' }}
-        rightElement={
-            <TouchableOpacity style={styles.button} onPress={() => {this.props.navigation.navigate("ReceiverDetails", {"details":item})}}>
-              <Text style={{color:'#ffff'}}>View</Text>
-            </TouchableOpacity>
-          }
         bottomDivider
-        />
-            <Text>{item.bookName}</Text>
-            <TouchableOpacity style={styles.button} onPress={() => {this.props.navigation.navigate("ReceiverDetails", {"details":item})}}>
-              <Text style={{color:'#ffff'}}>View</Text>
-            </TouchableOpacity>
-      </View>
-      
+      />
     )
   }
 
   render(){
     return(
       <View style={{flex:1}}>
-        <MyHeader title="Donate Books" navigation ={this.props.navigation}/>
+        <MyHeader title="Received Books" navigation ={this.props.navigation}/>
         <View style={{flex:1}}>
           {
-            this.state.requestedBooksList.length === 0
+            this.state.receivedBooksList.length === 0
             ?(
               <View style={styles.subContainer}>
-                <Text style={{ fontSize: 20}}>List Of All Requested Books</Text>
+                <Text style={{ fontSize: 20}}>List Of All Received Books</Text>
               </View>
             )
             :(
               <FlatList
                 keyExtractor={this.keyExtractor}
-                data={this.state.requestedBooksList}
+                data={this.state.receivedBooksList}
                 renderItem={this.renderItem}
               />
             )
